@@ -2,12 +2,12 @@
 
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { useLoader } from "@react-three/fiber";
-import { GLTFLoader } from "three/examples/jsm/Addons.js";
+import { GLTF, GLTFLoader } from "three/examples/jsm/Addons.js";
 import { Html, OrbitControls } from "@react-three/drei";
 import { degToRad } from "three/src/math/MathUtils.js";
 import * as THREE from "three";
 
-function PointCamera({ gltf }: { gltf: any }) {
+function PointCamera({ gltf }: { gltf: GLTF }) {
 	const state = useThree();
 	const { camera } = state;
 
@@ -29,7 +29,7 @@ function PointCamera({ gltf }: { gltf: any }) {
 	return <></>;
 }
 
-function OnMount({ gltf }: { gltf: any }) {
+function OnMount({ gltf }: { gltf: GLTF }) {
 	const screen = gltf.scene.getObjectByName("Screen_1")!;
 
 	let bboxSize = null;
