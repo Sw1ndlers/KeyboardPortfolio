@@ -1,110 +1,77 @@
 "use client";
 
-import { Button } from "@/components/ui/Button";
-import Image from "next/image";
-import { useEffect } from "react";
-
-const keyboardString = "qwertyuiop asdfghjkl zxcvbnm";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
+import { useLoader } from "@react-three/fiber";
+import { GLTFLoader } from "three/examples/jsm/Addons.js";
 import * as THREE from "three";
-import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
-import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+import { Html, OrbitControls } from "@react-three/drei";
+import { degToRad } from "three/src/math/MathUtils.js";
 
-function setupScene(onModelLoad: (importedModel: THREE.Object3D) => void) {
-	const loader = new GLTFLoader();
+function OnMount() {
+	const state = useThree();
+	const { camera, scene } = state;
 
-	const scene = new THREE.Scene();
-	const camera = new THREE.PerspectiveCamera(
-		75,
-		window.innerWidth / window.innerHeight,
-		0.1,
-		1000,
-	);
+	const screen = scene.getObjectByName("Screen_1")!;
+	let lookAt = null;
 
-	const renderer = new THREE.WebGLRenderer();
-	renderer.setSize(window.innerWidth, window.innerHeight);
-	document.body.appendChild(renderer.domElement);
+	let bboxSize = null;
+	let position = null;
 
-	scene.background = new THREE.Color("rgb(36, 36, 36)");
-	camera.position.x = 4;
-	camera.position.y = 3.8;
+	if (screen) {
+		lookAt = screen.position.clone();
+		lookAt.y += 3;
 
-	loader.load(
-		"Keyboard v2.glb",
-		function (gltf) {
-			scene.add(gltf.scene);
+		console.log(screen.scale);
 
-			onModelLoad(gltf.scene);
-		},
-		function (progress) {
-			// console.log(progress);
-		},
-		function (error) {
-			console.error(error);
-		},
-	);
+		const bbox = new THREE.Box3().setFromObject(screen);
+		bboxSize = new THREE.Vector3();
+		bbox.getSize(bboxSize);
 
-    // const controls = new OrbitControls(camera, renderer.domElement);
-
-	function animate() {
-        // controls.update();
-		renderer.render(scene, camera);
+		position = screen.getWorldPosition(new THREE.Vector3());
+		position.x += 0.1;
 	}
-	renderer.setAnimationLoop(animate);
 
-	return { scene, camera, renderer };
+	useFrame(() => {
+		if (lookAt) {
+			camera.lookAt(lookAt);
+		}
+	});
+
+	return (
+		<>
+			{screen && (
+				<mesh position={position!}>
+					<Html
+						transform
+						rotation={[0, degToRad(90), 0]}
+						occlude="raycast"
+					>
+						<div className="w-[658px] h-[347px] text-red-500 select-none flex justify-center items-center">
+							<p className=" text-5xl">Hi im Alex</p>
+						</div>
+					</Html>
+				</mesh>
+			)}
+		</>
+	);
 }
 
 export default function Home() {
-	useEffect(() => {
-		const { scene, camera, renderer } = setupScene(onModelLoad);
+	const gltf = useLoader(GLTFLoader, "Keyboard v2.glb");
 
-		const light = new THREE.PointLight(0xffffff);
-		scene.add(light);
+	return (
+		<div className=" w-screen h-screen">
+			<Canvas
+				camera={{
+					position: [4.5, 3.15, 0],
+				}}
+			>
+				<pointLight position={[0, 5, 0]} intensity={120} />
+				<primitive object={gltf.scene} />
+				<OrbitControls />
 
-		light.position.set(0, 5, 0);
-		light.intensity = 30;
-        
-
-		function onModelLoad(importedModel: THREE.Object3D) {
-			const lookAt = importedModel.position.clone();
-			lookAt.y += 3.4;
-
-			const keys: THREE.Mesh[] = [];
-
-			camera.lookAt(lookAt);
-			importedModel.traverse((child) => {
-				if (child instanceof THREE.Mesh) {
-					if (
-						child.name.includes("Key") &&
-						child.name.includes("Back") == false
-					) {
-						keys.push(child);
-					}
-				}
-			});
-
-			// sort keys by name (Key1, Key2, Key3, ...)
-			keys.sort((a, b) => {
-				const aNum = parseInt(a.name.replace(/^\D+/g, ""));
-				const bNum = parseInt(b.name.replace(/^\D+/g, ""));
-				return aNum - bNum;
-			});
-		}
-
-		function onResize() {
-			renderer.setSize(window.innerWidth, window.innerHeight);
-			camera.aspect = window.innerWidth / window.innerHeight;
-			camera.updateProjectionMatrix();
-		}
-
-		window.onresize = onResize;
-
-		return () => {
-			renderer.domElement.remove();
-			window.onresize = null;
-			renderer.setAnimationLoop(null);
-		};
-	}, []);
-
-	return <></>;
+				<OnMount />
+			</Canvas>
+		</div>
+	);
 }
