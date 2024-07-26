@@ -5,12 +5,11 @@ import { useLoader } from "@react-three/fiber";
 import { GLTF, GLTFLoader } from "three/examples/jsm/Addons.js";
 import { Html, OrbitControls } from "@react-three/drei";
 import { degToRad } from "three/src/math/MathUtils.js";
+// import { Tween } from "three/examples/jsm/libs/tween.module.js";
 import * as THREE from "three";
 
 function PointCamera({ gltf }: { gltf: GLTF }) {
-	const state = useThree();
-	const { camera } = state;
-
+	const { camera } = useThree();
 	const screen = gltf.scene.getObjectByName("Screen_1")!;
 
 	let lookAt = null;
@@ -29,7 +28,7 @@ function PointCamera({ gltf }: { gltf: GLTF }) {
 	return <></>;
 }
 
-function OnMount({ gltf }: { gltf: GLTF }) {
+function HtmlRenderer({ gltf }: { gltf: GLTF }) {
 	const screen = gltf.scene.getObjectByName("Screen_1")!;
 
 	let bboxSize = null;
@@ -73,14 +72,70 @@ function KeyboardModel() {
 			<primitive object={gltf.scene} />
 
 			<PointCamera gltf={gltf} />
-			<OnMount gltf={gltf} />
+			<HtmlRenderer gltf={gltf} />
+            <KeyReactivity glft={gltf}/>
 		</>
 	);
 }
 
-export default function Home() {
-	// const gltf = useLoader(GLTFLoader, "Keyboard v2.glb");
+const keyOrder = "Tab Q W E R T Y U I O P [{ }] \| Caps A S D F G H J K L ;: '\" Enter LShift Z X C V B N M ,< .> /? up RShift LCtrl Win LAlt Fn RAlt left down right RCtrl".split(" ")
 
+function KeyReactivity({glft}: {glft: GLTF}) {
+    type KeyCap = THREE.Mesh
+    type KeyText = THREE.Mesh
+
+    const keys: {[letter: string]: [KeyCap, KeyText]} = {}
+    const children: {[name: string]: THREE.Mesh} = {}
+
+    glft.scene.traverse(child => {
+        if (child instanceof THREE.Mesh) {
+            // if (!child.name.startsWith("Key") || !child.name.startsWith("Text")) return
+
+            children[child.name] = child
+        }
+    })
+
+    // for i in range 1-50
+    keyOrder.forEach((letter, i) => {
+        const index = i + 1
+
+        const keyCap = children[`Key${index}`] as KeyCap
+        const keyText = children[`Text${index}`] as KeyText
+
+        if (keyCap && keyText) {
+            keys[letter] = [keyCap, keyText]
+        } else {
+            switch (index) {
+                case 39:
+                    keys["left"] = [keyCap, children["LeftArrow"]]
+                    break
+                case 42:
+                    keys["Windows"] = [keyCap, children["WindowsIcon"]]
+                    break
+                case 46:
+                    keys["down"] = [keyCap, children["DownArrow"]]
+                    break
+                case 47:
+                    keys["up"] = [keyCap, children["UpArrow"]]
+                    break
+                case 48:
+                    keys["right"] = [keyCap, children["RightArrow"]]
+                    break
+            }
+        }
+    })
+
+    console.log(children)
+    console.log(keys)
+    
+    keys["Enter"][0].position.y += 1
+
+
+
+    return (<></>)
+}
+
+export default function Home() {
 	return (
 		<div className=" w-screen h-screen">
 			<Canvas
