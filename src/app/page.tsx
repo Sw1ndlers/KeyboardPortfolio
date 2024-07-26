@@ -7,6 +7,7 @@ import { Html, OrbitControls } from "@react-three/drei";
 import { degToRad } from "three/src/math/MathUtils.js";
 // import { Tween } from "three/examples/jsm/libs/tween.module.js";
 import * as THREE from "three";
+import { useEffect, useState } from "react";
 
 function PointCamera({ gltf }: { gltf: GLTF }) {
 	const { camera } = useThree();
@@ -43,8 +44,6 @@ function HtmlRenderer({ gltf }: { gltf: GLTF }) {
 		position.x += 0.1;
 	}
 
-	console.log(screen);
-
 	return (
 		<>
 			{screen && (
@@ -78,59 +77,102 @@ function KeyboardModel() {
 	);
 }
 
-const keyOrder = "Tab Q W E R T Y U I O P [{ }] \| Caps A S D F G H J K L ;: '\" Enter LShift Z X C V B N M ,< .> /? up RShift LCtrl Win LAlt Fn RAlt left down right RCtrl".split(" ")
+const keyOrder = "Tab Q W E R T Y U I O P [{ }] \| Caps A S D F G H J K L ;: '\" Enter LShift Z X C V B N M ,< .> /? up RShift LCtrl Win LAlt Fn Space RAlt left down right RCtrl".split(" ")
+
+type KeyArray = {[letter: string]: [THREE.Mesh, THREE.Mesh]}
+type KeyCap = THREE.Mesh
+type KeyText = THREE.Mesh
 
 function KeyReactivity({glft}: {glft: GLTF}) {
-    type KeyCap = THREE.Mesh
-    type KeyText = THREE.Mesh
+    const [finalizedKeys, setFinalizedKeys] = useState<KeyArray>({})
 
-    const keys: {[letter: string]: [KeyCap, KeyText]} = {}
-    const children: {[name: string]: THREE.Mesh} = {}
+    useEffect(() => {
+        if (!finalizedKeys) return
 
-    glft.scene.traverse(child => {
-        if (child instanceof THREE.Mesh) {
-            // if (!child.name.startsWith("Key") || !child.name.startsWith("Text")) return
+        window.onkeydown = (e) => {
+            console.log(e.key)
+            const key = finalizedKeys[e.key] || finalizedKeys[e.key.toLowerCase()] || finalizedKeys[e.key.toUpperCase()]
 
-            children[child.name] = child
-        }
-    })
+            if (key) {
+                const [keyCap, keyText] = key
 
-    // for i in range 1-50
-    keyOrder.forEach((letter, i) => {
-        const index = i + 1
+                keyCap.material = new THREE.MeshStandardMaterial({color: 0x000000})
+                keyText.material = new THREE.MeshStandardMaterial({color: 0xffffff})
+            } else {
+                if (e.key == "Control") {
+                    const key = e.location == 1 ? finalizedKeys["LCtrl"] : finalizedKeys["RCtrl"]
+                    const [keyCap, keyText] = key
 
-        const keyCap = children[`Key${index}`] as KeyCap
-        const keyText = children[`Text${index}`] as KeyText
+                    keyCap.material = new THREE.MeshStandardMaterial({color: 0x000000})
+                    keyText.material = new THREE.MeshStandardMaterial({color: 0xffffff})
+                }
 
-        if (keyCap && keyText) {
-            keys[letter] = [keyCap, keyText]
-        } else {
-            switch (index) {
-                case 39:
-                    keys["left"] = [keyCap, children["LeftArrow"]]
-                    break
-                case 42:
-                    keys["Windows"] = [keyCap, children["WindowsIcon"]]
-                    break
-                case 46:
-                    keys["down"] = [keyCap, children["DownArrow"]]
-                    break
-                case 47:
-                    keys["up"] = [keyCap, children["UpArrow"]]
-                    break
-                case 48:
-                    keys["right"] = [keyCap, children["RightArrow"]]
-                    break
+                if (e.key == "Shift") {
+                    const key = e.location == 1 ? finalizedKeys["LShift"] : finalizedKeys["RShift"]
+                    const [keyCap, keyText] = key
+
+                    keyCap.material = new THREE.MeshStandardMaterial({color: 0x000000})
+                    keyText.material = new THREE.MeshStandardMaterial({color: 0xffffff})
+                }
+
+                if (e.key == "Alt") {
+                    const key = e.location == 1 ? finalizedKeys["LAlt"] : finalizedKeys["RAlt"]
+                    const [keyCap, keyText] = key
+
+                    keyCap.material = new THREE.MeshStandardMaterial({color: 0x000000})
+                    keyText.material = new THREE.MeshStandardMaterial({color: 0xffffff})
+                }
             }
         }
-    })
 
-    console.log(children)
-    console.log(keys)
+    }, [finalizedKeys])
+
+
+    useEffect(() => {
+        const keys: KeyArray = {}
+        const children: {[name: string]: THREE.Mesh} = {}
+
+        glft.scene.traverse(child => {
+            if (child instanceof THREE.Mesh) {
+                // if (!child.name.startsWith("Key") || !child.name.startsWith("Text")) return
+
+                children[child.name] = child
+            }
+        })
+
+        // for i in range 1-50
+        keyOrder.forEach((letter, i) => {
+            const index = i + 1
+
+            const keyCap = children[`Key${index}`] as KeyCap
+            const keyText = children[`Text${index}`] as KeyText
+
+            if (keyCap && keyText) {
+                keys[letter] = [keyCap, keyText]
+            } else {
+                switch (index) {
+                    case 39:
+                        keys["ArrowLeft"] = [keyCap, children["LeftArrow"]]
+                        break
+                    case 42:
+                        keys["Windows"] = [keyCap, children["WindowsIcon"]]
+                        break
+                    case 46:
+                        keys["ArrowDown"] = [keyCap, children["DownArrow"]]
+                        break
+                    case 47:
+                        keys["ArrowUp"] = [keyCap, children["UpArrow"]]
+                        break
+                    case 48:
+                        keys["ArrowRight"] = [keyCap, children["RightArrow"]]
+                        break
+                }
+            }
+        })
+
+        setFinalizedKeys(keys)
+    }, [])
     
-    keys["Enter"][0].position.y += 1
-
-
 
     return (<></>)
 }
