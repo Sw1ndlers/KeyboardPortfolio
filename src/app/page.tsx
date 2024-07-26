@@ -7,22 +7,36 @@ import * as THREE from "three";
 import { Html, OrbitControls } from "@react-three/drei";
 import { degToRad } from "three/src/math/MathUtils.js";
 
-function OnMount() {
-	const state = useThree();
-	const { camera, scene } = state;
+function PointCamera() {
+    const state = useThree();
+    const { camera, scene } = state;
 
 	const screen = scene.getObjectByName("Screen_1")!;
-	let lookAt = null;
+
+    let lookAt = null;
+
+	if (screen) {
+		lookAt = screen.position.clone();
+		lookAt.y += 3;
+	}
+
+    useFrame(() => {
+        if (lookAt) {
+            camera.lookAt(lookAt);
+        }
+    });
+
+    return (<></>)
+}
+
+function OnMount() {
+	const { scene } = useThree();
+	const screen = scene.getObjectByName("Screen_1")!;
 
 	let bboxSize = null;
 	let position = null;
 
 	if (screen) {
-		lookAt = screen.position.clone();
-		lookAt.y += 3;
-
-		console.log(screen.scale);
-
 		const bbox = new THREE.Box3().setFromObject(screen);
 		bboxSize = new THREE.Vector3();
 		bbox.getSize(bboxSize);
@@ -30,12 +44,6 @@ function OnMount() {
 		position = screen.getWorldPosition(new THREE.Vector3());
 		position.x += 0.1;
 	}
-
-	useFrame(() => {
-		if (lookAt) {
-			camera.lookAt(lookAt);
-		}
-	});
 
 	return (
 		<>
@@ -56,8 +64,11 @@ function OnMount() {
 	);
 }
 
+
 export default function Home() {
-	const gltf = useLoader(GLTFLoader, "Keyboard v2.glb");
+	const gltf = useLoader(GLTFLoader, "./Keyboard v2.glb");
+
+
 
 	return (
 		<div className=" w-screen h-screen">
@@ -68,8 +79,10 @@ export default function Home() {
 			>
 				<pointLight position={[0, 5, 0]} intensity={120} />
 				<primitive object={gltf.scene} />
-				<OrbitControls />
 
+
+				<OrbitControls />
+                <PointCamera />
 				<OnMount />
 			</Canvas>
 		</div>
